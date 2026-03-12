@@ -14,7 +14,14 @@ import time
 import uuid
 
 app = Flask(__name__)
-CORS(app)  # Izinkan frontend mengakses backend
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=False)
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return response
 
 # ── Folder sementara untuk menyimpan file unduhan ──────────────────────────
 DOWNLOAD_DIR = tempfile.mkdtemp(prefix="saveit_")
@@ -284,6 +291,12 @@ threading.Thread(target=cleanup_old_files, daemon=True).start()
 # ══════════════════════════════════════════════════════════════════════
 #  ROUTE 5: GET /health  — cek server aktif
 # ══════════════════════════════════════════════════════════════════════
+@app.route("/info", methods=["OPTIONS"])
+@app.route("/download", methods=["OPTIONS"])
+@app.route("/health", methods=["OPTIONS"])
+def handle_options():
+    return "", 204
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "service": "SaveIt Backend", "version": "1.0"})
